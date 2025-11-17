@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlmodel import SQLModel, Session
 from database import engine, get_session
 from models import Stock, get_stocks, create_stock, update_stock, delete_stock
+from schema import StockResponse
 
 app = FastAPI(title="Stock Market API")
 
@@ -17,8 +18,8 @@ app.add_middleware(
 
 
 # ---------------- Routes ----------------
-@app.get("/stocks/")
-def read_stocks(skip: int = 0, limit: int = 100, session: Session = Depends(get_session)):
+@app.get("/stocks/", response_model=list[StockResponse])
+def read_stocks(skip: int = 0, limit: int = 16000, session: Session = Depends(get_session)):
     return get_stocks(session, skip, limit)
 
 @app.post("/stocks/")
