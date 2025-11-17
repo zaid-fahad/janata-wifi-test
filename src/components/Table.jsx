@@ -4,7 +4,6 @@ import { ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 
 export default function DataTable({ data, loaderRef }) {
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
-  
 
   // Sorting
   const sortedData = useMemo(() => {
@@ -37,7 +36,8 @@ export default function DataTable({ data, loaderRef }) {
   };
 
   const renderSortIcon = (key) => {
-    if (sortConfig.key !== key) return <ArrowUpDown className="w-4 h-4 text-gray-400" />;
+    if (sortConfig.key !== key)
+      return <ArrowUpDown className="w-4 h-4 text-gray-400" />;
     return sortConfig.direction === "asc" ? (
       <ArrowUp className="w-4 h-4 text-gray-500" />
     ) : (
@@ -45,7 +45,7 @@ export default function DataTable({ data, loaderRef }) {
     );
   };
 
-  // Table 
+  // Table
   return (
     <div className="p-6">
       <div className="border rounded-xl shadow bg-white overflow-hidden">
@@ -82,14 +82,13 @@ export default function DataTable({ data, loaderRef }) {
           </table>
 
           {/* Lazy Load Trigger */}
-<div
-  ref={loaderRef}
-  className="flex items-center justify-center py-4 space-x-2"
->
-  <div className="w-5 h-5 border-2 border-t-blue-500 border-gray-300 rounded-full animate-spin"></div>
-  <span className="text-gray-500 text-sm">Loading more data...</span>
-</div>
-
+          <div
+            ref={loaderRef}
+            className="flex items-center justify-center py-4 space-x-2"
+          >
+            <div className="w-5 h-5 border-2 border-t-blue-500 border-gray-300 rounded-full animate-spin"></div>
+            <span className="text-gray-500 text-sm">Loading more data...</span>
+          </div>
         </div>
       </div>
     </div>
