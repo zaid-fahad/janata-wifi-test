@@ -1,10 +1,12 @@
-import json
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-import pandas as pd
+from sqlmodel import SQLModel, Session
+from database import engine, get_session
+from models import Stock, get_stocks, create_stock, update_stock, delete_stock
 
-app = FastAPI()
+app = FastAPI(title="Stock Market API")
 
+# ---------------- CORS ----------------
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -13,25 +15,26 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-STOCK_DATA = []
 
+# ---------------- Routes ----------------
+@app.get("/stocks/")
+def read_stocks(skip: int = 0, limit: int = 100, session: Session = Depends(get_session)):
+    return get_stocks(session, skip, limit)
 
-def load_with_pandas(path: str):
-    df = pd.read_json(path)
-    return df.to_dict(orient="records")
+@app.post("/stocks/")
+def add_stock(stock: Stock, session: Session = Depends(get_session)):
+    return create_stock(session, stock)
 
+@app.put("/stocks/{stock_id}")
+def edit_stock(stock_id: int, stock: Stock, session: Session = Depends(get_session)):
+    updated = update_stock(session, stock_id, stock.dict(exclude_unset=True))
+    if not updated:
+        raise HTTPException(status_code=404, detail="Stock not found")
+    return updated
 
-
-@app.on_event("startup")
-async def startup():
-    global STOCK_DATA
-    STOCK_DATA = load_with_pandas("stock_market_data.json")
-    print("Loaded:", len(STOCK_DATA))
-
-
-@app.get("/data")
-async def get_data():
-    return {
-        "total_count": len(STOCK_DATA),
-        "data": STOCK_DATA        
-    }
+@app.delete("/stocks/{stock_id}")
+def remove_stock(stock_id: int, session: Session = Depends(get_session)):
+    deleted = delete_stock(session, stock_id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Stock not found")
+    return {"ok": True}
