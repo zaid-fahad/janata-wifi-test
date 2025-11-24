@@ -1,11 +1,11 @@
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { Search, Plus } from "lucide-react";
 import DataTable from "./components/Table";
 import StockChart from "./components/Chart";
 import MoodRadar from "./components/MoodRadar";
 import Heatmap from "./components/HeatmapBar";
 
-export default function App() {
+export default function Dashboard() {
   const BATCH_SIZE = 50;
   const [allRows, setAllRows] = useState([]);
   const [visibleRows, setVisibleRows] = useState([]);
@@ -46,19 +46,19 @@ export default function App() {
     fetchData();
   }, []);
 
-  // ------------------ Filtered data ------------------
-  const filteredRows = search
-    ? allRows.filter((row) =>
-        row.trade_code.toLowerCase().includes(search.toLowerCase())
-      )
-    : allRows;
+  // ------------------ Filtered rows ------------------
+  const filteredRows = useMemo(() => {
+    if (!search) return allRows;
+    return allRows.filter((row) =>
+      row.trade_code.toLowerCase().includes(search.toLowerCase())
+    );
+  }, [allRows, search]);
 
   // ------------------ Lazy Load ------------------
   const loadMore = useCallback(() => {
     setVisibleRows((prev) => {
       const nextIndex = prev.length;
-      const nextBatch = filteredRows.slice(nextIndex, nextIndex + BATCH_SIZE);
-      return [...prev, ...nextBatch];
+      return [...prev, ...filteredRows.slice(nextIndex, nextIndex + BATCH_SIZE)];
     });
   }, [filteredRows]);
 
@@ -76,18 +76,28 @@ export default function App() {
 
   useEffect(() => {
     setVisibleRows(filteredRows.slice(0, BATCH_SIZE));
-  }, [search, allRows]);
+  }, [filteredRows]);
+
+  // ------------------ Dashboard Stats ------------------
+  const stats = useMemo(() => {
+    if (!allRows.length) return { avgClose: 0, avgHigh: 0, avgLow: 0, avgVolume: 0 };
+
+    const avgClose = allRows.reduce((a, b) => a + Number(b.close), 0) / allRows.length;
+    const avgHigh = allRows.reduce((a, b) => a + Number(b.high), 0) / allRows.length;
+    const avgLow = allRows.reduce((a, b) => a + Number(b.low), 0) / allRows.length;
+    const avgVolume = allRows.reduce((a, b) => a + Number(b.volume), 0) / allRows.length;
+
+    return { avgClose, avgHigh, avgLow, avgVolume };
+  }, [allRows]);
 
   // ------------------ Skeleton Loader ------------------
-  const renderSkeleton = () => {
-    return Array.from({ length: 10 }).map((_, idx) => (
-      <div key={idx} className="animate-pulse flex space-x-4 py-2 border-b">
-        {Array.from({ length: 7 }).map((__, i) => (
-          <div key={i} className="bg-gray-300 h-4 w-full rounded" />
-        ))}
-      </div>
-    ));
-  };
+  const renderSkeleton = () => (
+    <div className="space-y-4">
+      {Array.from({ length: 4 }).map((_, i) => (
+        <div key={i} className="animate-pulse h-36 bg-gradient-to-r from-pastel-blue to-pastel-green rounded-xl" />
+      ))}
+    </div>
+  );
 
   // ------------------ Handle Create Stock ------------------
   const handleCreateStock = async () => {
@@ -104,11 +114,9 @@ export default function App() {
           volume: parseFloat(newStock.volume),
         }),
       });
-
       if (!res.ok) throw new Error("Failed to create stock");
-
       const created = await res.json();
-      setAllRows([created, ...allRows]); // prepend new stock
+      setAllRows([created, ...allRows]);
       setVisibleRows([created, ...visibleRows]);
       setShowForm(false);
       setNewStock({
@@ -127,43 +135,47 @@ export default function App() {
   };
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
-      <h1 className="text-3xl font-bold mb-6">Stock Market Explorer</h1>
-
-      <StockChart allRows={allRows} />
-      <MoodRadar allRows={allRows} />
-      <Heatmap allRows={allRows} />
-
-      {/* Search + Create Button */}
-      <div className="flex items-center justify-between mb-6 gap-4">
-        <div className="flex items-center border rounded-lg px-3 py-1.5 bg-white max-w-md">
-          <Search className="w-4 h-4 text-gray-500" />
-          <input
-            type="text"
-            placeholder="Search by trade code..."
-            className="ml-2 outline-none text-sm w-full"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-        </div>
-
-        <button
-          onClick={() => setShowForm(!showForm)}
-          className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-        >
-          <Plus className="w-4 h-4" /> Create Stock
-        </button>
+    <div className="p-6 bg-pastel-gray min-h-screen space-y-8 font-sans">
+      {/* Top Bar */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+        <h1 className="text-3xl font-bold text-gray-800">Stock Dashboard</h1>
+       
       </div>
 
-      {/* Create Stock Form */}
+      {/* Summary Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        {[
+          { title: "Avg Close", value: stats.avgClose },
+          { title: "Avg High", value: stats.avgHigh },
+          { title: "Avg Low", value: stats.avgLow },
+          { title: "Avg Volume", value: stats.avgVolume },
+        ].map((stat) => (
+          <div
+            key={stat.title}
+            className={`p-6 rounded-xl shadow-md bg-gradient-to-r `}
+          >
+            <p className="text-sm">{stat.title}</p>
+            <p className="text-2xl font-bold mt-2">{stat.value.toFixed(2)}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Charts Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {loading ? renderSkeleton() : <StockChart allRows={allRows} />}
+        {!loading && <MoodRadar allRows={allRows} />}
+        {!loading && <Heatmap allRows={allRows} />}
+      </div>
+
+      {/* Add Stock Form */}
       {showForm && (
-        <div className="mb-6 p-4 border rounded bg-white space-y-2">
+        <div className="p-6 border rounded-xl bg-white max-w-md space-y-4">
           {Object.keys(newStock).map((key) => (
             <input
               key={key}
               type={key === "date" ? "date" : "text"}
               placeholder={key}
-              className="border px-2 py-1 rounded w-full"
+              className="border px-3 py-2 rounded w-full focus:ring-2 focus:ring-pastel-blue"
               value={newStock[key]}
               onChange={(e) =>
                 setNewStock((prev) => ({ ...prev, [key]: e.target.value }))
@@ -172,32 +184,48 @@ export default function App() {
           ))}
           <button
             onClick={handleCreateStock}
-            className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+            className="bg-pastel-blue text-white px-4 py-2 rounded-lg hover:bg-blue-400"
           >
-            Save
+            Save Stock
           </button>
         </div>
       )}
 
-      {error && <p className="text-red-500">{error}</p>}
-
-      {/* Skeleton */}
-      {loading && (
-        <div className="border rounded-xl shadow bg-white overflow-hidden">
-          {renderSkeleton()}
+      <div className="flex flex-col md:flex-row gap-4 w-full md:w-auto">
+          <div className="flex items-center border rounded-lg px-3 py-1.5 bg-white w-full md:w-64">
+            <Search className="w-4 h-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search by trade code..."
+              className="ml-2 outline-none text-sm w-full"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+          <button
+            onClick={() => setShowForm(!showForm)}
+            className="flex items-center gap-2 bg-blue-800 text-white px-4 py-2 rounded-lg hover:bg-blue-400"
+          >
+            <Plus className="w-4 h-4" /> Add Stock
+          </button>
         </div>
-      )}
 
       {/* Table */}
-      {!loading && visibleRows.length > 0 && (
-        <DataTable
-          data={visibleRows}
-          loaderRef={loaderRef}
-          setAllRows={setAllRows}
-          allRows={allRows}
-          BASE_URL={BASE_URL}
-        />
-      )}
+      <div className="bg-white rounded-xl shadow overflow-hidden">
+        {loading ? (
+          <div className="p-4">{renderSkeleton()}</div>
+        ) : (
+          <DataTable
+            data={visibleRows}
+            loaderRef={loaderRef}
+            setAllRows={setAllRows}
+            allRows={allRows}
+            BASE_URL={BASE_URL}
+          />
+        )}
+      </div>
+
+      {error && <p className="text-red-500">{error}</p>}
     </div>
   );
 }
