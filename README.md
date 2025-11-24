@@ -1,16 +1,51 @@
-# React + Vite
+# Stock Market Dashboard
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+## Overview
 
-Currently, two official plugins are available:
+This project is a **modern, interactive stock market dashboard** built to explore and analyze stock data efficiently. It includes features like:
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **CRUD operations** on stock data
+- **Lazy-loaded table** for large datasets
+- **Interactive charts**: bar chart, heatmap, and market mood radar
+- **Search and filtering**
 
-## React Compiler
+---
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## What I Learned
 
-## Expanding the ESLint configuration
+1. **Efficient Data Handling**  
+   - Initially started with a large JSON file. Loading all rows at once caused significant UI lag.  
+   - Implemented **lazy-loading** in the table and progressive data fetching, making the UI responsive.
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+2. **Database Integration**  
+   - Built a **database importer script** to move JSON data into a SQL database.  
+   - Added full **CRUD functionality** to manage stock data dynamically.
+
+3. **Data Visualization**  
+   - Learned to use **Recharts** and **Nivo** for charts like bar charts, heatmaps, and radar charts.  
+   - Learned to transform raw stock data into formats suitable for these chart libraries.  
+
+4. **Performance Optimization**  
+   - Used **lazy loading data** to improve performance.  
+   - Learned that large datasets can significantly slow down chart rendering; optimization is crucial.
+---
+
+## Challenges Faced
+
+- **UI Slowdowns**  
+  Rendering all rows in a single table blocked the main thread. Lazy loading and progressive rendering solved this.  
+
+- **Chart Performance**  
+  Rendering thousands of data points in charts caused lag. but large datasets still pose a challenge.  
+
+- **Data Transformation**  
+  Converting raw stock data into formats suitable for different charts (heatmap, radar, bar chart) required careful handling.
+
+---
+
+## Tech Stack
+
+- **Frontend:** React, Vite, Tailwind CSS
+- **Backend:** Fast API (for API, optional SQL database integration)  
+
+---
