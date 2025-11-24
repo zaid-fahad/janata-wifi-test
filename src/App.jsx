@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { Search, Plus } from "lucide-react";
 import DataTable from "./components/Table";
+import StockChart from "./components/Chart";
 
 export default function App() {
   const BATCH_SIZE = 50;
@@ -126,6 +127,9 @@ export default function App() {
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
       <h1 className="text-3xl font-bold mb-6">Stock Market Explorer</h1>
+      <h1 className="text-3xl font-bold mb-6">Stock Market Explorer</h1>
+
+      <StockChart allRows={allRows} />
 
       {/* Search + Create Button */}
       <div className="flex items-center justify-between mb-6 gap-4">
